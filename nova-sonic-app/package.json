@@ -1,0 +1,21 @@
+{
+  "name": "nova-sonic-app",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:server": "node server/index.mjs",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.2",
+    "vite": "^8.0.4"
+  },
+  "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.1029.0",
+    "express": "^5.2.1",
+    "ws": "^8.20.0"
+  }
+}
