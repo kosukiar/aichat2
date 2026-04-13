@@ -8,7 +8,7 @@ import {
 import { randomUUID } from "crypto";
 
 const PORT = process.env.PORT || 3001;
-const REGION = process.env.AWS_REGION || "us-east-1";
+const REGION = process.env.AWS_REGION || "ap-northeast-1";
 const MODEL_ID = "amazon.nova-sonic-v1:0";
 
 const app = express();
@@ -280,6 +280,6 @@ wss.on("connection", (ws) => {
   });
 });
 
-server.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server running on http://0.0.0.0:${PORT}`);
 });

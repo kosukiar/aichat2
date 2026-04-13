@@ -8,7 +8,7 @@ Amazon Nova Sonic を使ったリアルタイム音声会話アプリ。
 |---------|------|
 | フロントエンド | Vite + TypeScript (Vanilla) |
 | バックエンド | Node.js + Express + ws (WebSocket) |
-| AI モデル | Amazon Nova Sonic (`amazon.nova-sonic-v1:0`) |
+| AI モデル | Amazon Nova Sonic v2 (`amazon.nova-sonic-v2:0`) |
 | AWS SDK | `@aws-sdk/client-bedrock-runtime` (JS v3) |
 | ホスティング | AWS Amplify Hosting (フロントエンド) |
 
@@ -31,7 +31,7 @@ Amazon Bedrock (Nova Sonic)
 
 - Node.js >= 20.x
 - AWS CLI 設定済み (`aws configure`)
-- Amazon Bedrock で Nova Sonic モデルが有効化済み (us-east-1)
+- Amazon Bedrock で Nova Sonic v2 モデルが有効化済み (ap-northeast-1)
 
 ## ローカル開発
 
@@ -54,7 +54,7 @@ npm run dev
 
 | 変数 | 説明 | デフォルト |
 |------|------|-----------|
-| `AWS_REGION` | AWS リージョン | `us-east-1` |
+| `AWS_REGION` | AWS リージョン | `ap-northeast-1` |
 | `PORT` | バックエンドポート | `3001` |
 | `VITE_WS_URL` | WebSocket 接続先 (フロント用) | `ws://localhost:3001` |
 
@@ -71,16 +71,19 @@ npm run dev
 ## ファイル構成
 
 ```
-nova-sonic-app/
-├── server/
-│   └── index.mjs          # WebSocket プロキシサーバー
-├── src/
-│   ├── main.ts             # フロントエンド エントリポイント
-│   ├── audio-utils.ts      # マイク収録 / 音声再生ユーティリティ
-│   └── style.css           # スタイル
+aichat2/
+├── README.md               # このファイル
 ├── amplify.yml             # Amplify ビルド設定
-├── index.html              # HTML テンプレート
-├── vite.config.ts          # Vite 設定
-├── tsconfig.json           # TypeScript 設定
-└── package.json
+├── .gitignore
+└── nova-sonic-app/
+    ├── server/
+    │   └── index.mjs       # WebSocket プロキシサーバー
+    ├── src/
+    │   ├── main.ts          # フロントエンド エントリポイント
+    │   ├── audio-utils.ts   # マイク収録 / 音声再生ユーティリティ
+    │   └── style.css        # スタイル
+    ├── index.html           # HTML テンプレート
+    ├── vite.config.ts       # Vite 設定
+    ├── tsconfig.json        # TypeScript 設定
+    └── package.json
 ```

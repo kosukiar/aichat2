@@ -1,7 +1,7 @@
 import "./style.css";
 import { startMicCapture, AudioPlayer } from "./audio-utils";
 
-const WS_URL = import.meta.env.VITE_WS_URL || "ws://localhost:3001";
+const WS_URL = import.meta.env.VITE_WS_URL || "ws://13.114.85.213:443";
 
 let ws: WebSocket | null = null;
 let micHandle: { stop: () => void } | null = null;

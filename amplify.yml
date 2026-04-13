@@ -3,14 +3,16 @@ frontend:
   phases:
     preBuild:
       commands:
+        - cd nova-sonic-app
         - npm ci
     build:
       commands:
+        - cd nova-sonic-app
         - npm run build
   artifacts:
-    baseDirectory: dist
+    baseDirectory: nova-sonic-app/dist
     files:
       - "**/*"
   cache:
     paths:
-      - node_modules/**/*
+      - nova-sonic-app/node_modules/**/*
