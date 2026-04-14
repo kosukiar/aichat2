@@ -21,14 +21,17 @@ app.innerHTML = `
   <p class="subtitle">Amazon Nova Sonic でリアルタイム音声会話</p>
   <button class="mic-button" id="micBtn" aria-label="マイクのオン・オフ切り替え">🎤</button>
   <div id="status">マイクボタンを押して会話を開始</div>
-  <div id="transcript" role="log" aria-live="polite" aria-label="会話ログ"></div>
-  <div id="feedback" role="region" aria-label="フィードバック"></div>
+  <div id="main-content">
+    <div id="transcript" role="log" aria-live="polite" aria-label="会話ログ"></div>
+    <div id="feedback" role="region" aria-label="フィードバック"></div>
+  </div>
 `;
 
 const micBtn = document.getElementById("micBtn") as HTMLButtonElement;
 const statusEl = document.getElementById("status")!;
 const transcriptEl = document.getElementById("transcript")!;
 const feedbackEl = document.getElementById("feedback")!;
+const mainContentEl = document.getElementById("main-content")!;
 
 micBtn.addEventListener("click", toggleSession);
 
@@ -159,6 +162,7 @@ async function stopSession() {
 
 function showFeedback(content: string) {
   feedbackEl.innerHTML = `<div class="feedback-content"><h2>📋 会話フィードバック</h2><pre>${content}</pre></div>`;
+  mainContentEl.classList.add("with-feedback");
   cleanupSession();
 }
 

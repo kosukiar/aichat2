@@ -17,7 +17,7 @@ body {
 #app {
   text-align: center;
   width: 100%;
-  max-width: 480px;
+  max-width: 960px;
   padding: 2rem;
 }
 
@@ -84,11 +84,38 @@ h1 {
   border-radius: 12px;
   padding: 1rem;
   min-height: 200px;
-  max-height: 400px;
+  max-height: 500px;
   overflow-y: auto;
   text-align: left;
   font-size: 0.85rem;
   line-height: 1.6;
+}
+
+#main-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+#main-content.with-feedback {
+  flex-direction: row;
+  align-items: flex-start;
+}
+
+#main-content.with-feedback #transcript {
+  flex: 1;
+  min-width: 0;
+}
+
+#main-content.with-feedback #feedback {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 640px) {
+  #main-content.with-feedback {
+    flex-direction: column;
+  }
 }
 
 #transcript:empty::before {
@@ -123,10 +150,11 @@ h1 {
   border: 1px solid #4a9eff;
   border-radius: 12px;
   padding: 1.2rem;
-  margin-top: 1rem;
   text-align: left;
   font-size: 0.85rem;
   line-height: 1.8;
+  max-height: 500px;
+  overflow-y: auto;
 }
 
 .feedback-content h2 {
