@@ -1,7 +1,12 @@
 import "./style.css";
 import { startMicCapture, AudioPlayer } from "./audio-utils";
 
-const WS_URL = import.meta.env.VITE_WS_URL || "wss://api.kosukiar.people.aws.dev";
+const WS_URL = import.meta.env.VITE_WS_URL;
+if (!WS_URL) {
+  document.querySelector<HTMLDivElement>("#app")!.innerHTML =
+    "<p style='color:red;text-align:center;margin-top:2rem'>VITE_WS_URL が設定されていません</p>";
+  throw new Error("VITE_WS_URL is not set");
+}
 
 let ws: WebSocket | null = null;
 let micHandle: { stop: () => void } | null = null;
