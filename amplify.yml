@@ -6,7 +6,7 @@ frontend:
         - cd nova-sonic-app && npm ci
     build:
       commands:
-        - cd nova-sonic-app && npm run build
+        - npm run build
   artifacts:
     baseDirectory: nova-sonic-app/dist
     files:
