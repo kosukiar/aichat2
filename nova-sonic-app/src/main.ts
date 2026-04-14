@@ -22,11 +22,13 @@ app.innerHTML = `
   <button class="mic-button" id="micBtn" aria-label="マイクのオン・オフ切り替え">🎤</button>
   <div id="status">マイクボタンを押して会話を開始</div>
   <div id="transcript" role="log" aria-live="polite" aria-label="会話ログ"></div>
+  <div id="feedback" role="region" aria-label="フィードバック"></div>
 `;
 
 const micBtn = document.getElementById("micBtn") as HTMLButtonElement;
 const statusEl = document.getElementById("status")!;
 const transcriptEl = document.getElementById("transcript")!;
+const feedbackEl = document.getElementById("feedback")!;
 
 micBtn.addEventListener("click", toggleSession);
 
@@ -108,6 +110,10 @@ async function startSession() {
         cleanupSession();
         break;
 
+      case "feedback":
+        showFeedback(msg.content);
+        break;
+
       case "error":
         setStatus(`エラー: ${msg.message}`);
         cleanupSession();
@@ -144,10 +150,15 @@ async function beginMicCapture() {
 
 async function stopSession() {
   if (ws?.readyState === WebSocket.OPEN) {
+    setStatus("フィードバックを生成中...");
     ws.send(JSON.stringify({ type: "end_session" }));
   }
   micHandle?.stop();
   micHandle = null;
+}
+
+function showFeedback(content: string) {
+  feedbackEl.innerHTML = `<div class="feedback-content"><h2>📋 会話フィードバック</h2><pre>${content}</pre></div>`;
   cleanupSession();
 }
 

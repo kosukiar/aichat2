@@ -6,6 +6,7 @@ import { WebSocketServer } from "ws";
 import {
   BedrockRuntimeClient,
   InvokeModelWithBidirectionalStreamCommand,
+  InvokeModelCommand,
 } from "@aws-sdk/client-bedrock-runtime";
 import { randomUUID } from "crypto";
 
@@ -47,6 +48,9 @@ wss.on("connection", (ws) => {
   const audioContentName = randomUUID();
 
   const client = new BedrockRuntimeClient({ region: REGION });
+
+  // Conversation history for feedback generation
+  const conversationHistory = [];
 
   // Create an async iterable that yields events to Bedrock
   async function* createInputStream() {
@@ -131,14 +135,23 @@ wss.on("connection", (ws) => {
             promptName,
             contentName,
             content:
-              "You are an English conversation teacher. Your student is an AWS Support Engineer. " +
-              "At the start of the conversation, suggest a few topics such as technical discussions (e.g. cloud architecture, troubleshooting), " +
-              "business conversations (e.g. meetings, presentations), or casual small talk, and ask the student what they'd like to talk about. " +
-              "During the conversation, if the student makes a grammar mistake or could use a better English expression, " +
-              "gently point it out with a brief correction like: 'By the way, you said X, but you could say Y.' " +
-              "However, do NOT let corrections interrupt the flow of conversation. Keep corrections short and light, " +
-              "then immediately continue the discussion. Prioritize natural, engaging conversation above all. " +
-              "Keep your responses concise, generally two or three sentences.",
+              "You are an experienced English conversation teacher specializing in technical English for cloud engineers. " +
+              "Your student is an AWS Support Engineer who handles cases involving Lambda, VPC networking, NAT instances/gateways, " +
+              "EC2 connectivity, IAM permissions, S3 access issues, Route53 DNS resolution, and other AWS services daily. " +
+              "At the start, suggest specific technical scenarios to discuss, such as: " +
+              "1) Troubleshooting Lambda functions that can't reach the internet from a VPC, " +
+              "2) Debugging NAT instance vs NAT gateway connectivity issues, " +
+              "3) Explaining VPC peering or Transit Gateway setups to a customer, " +
+              "4) Walking a customer through IAM policy evaluation logic, " +
+              "5) Handling a Sev-2 outage call with a customer. " +
+              "Ask the student to pick one or suggest their own. " +
+              "During the conversation, actively drive the discussion with follow-up questions and realistic scenarios. " +
+              "For example, if discussing Lambda VPC networking, ask things like 'So the customer says their Lambda function times out " +
+              "when calling an external API. What would you check first?' " +
+              "If the student makes a grammar mistake or could use a better expression, " +
+              "briefly point it out like: 'Quick note - you said X, but Y sounds more natural.' " +
+              "Then immediately continue the technical discussion. Never let corrections derail the conversation. " +
+              "Keep responses concise, two to three sentences max.",
           },
         },
       },
@@ -226,10 +239,17 @@ wss.on("connection", (ws) => {
                 })
               );
             } else if (data.event.textOutput) {
+              const text = data.event.textOutput.content;
+              // Accumulate conversation history
+              if (currentRole === "USER") {
+                conversationHistory.push({ role: "USER", text });
+              } else if (currentRole === "ASSISTANT" && isSpeculative) {
+                conversationHistory.push({ role: "ASSISTANT", text });
+              }
               ws.send(
                 JSON.stringify({
                   type: "text",
-                  content: data.event.textOutput.content,
+                  content: text,
                   role: currentRole,
                   speculative: isSpeculative,
                 })
@@ -273,6 +293,51 @@ wss.on("connection", (ws) => {
     });
     // Signal the generator to stop
     pushInput(null);
+
+    // Generate feedback if there's conversation history
+    if (conversationHistory.length > 0) {
+      try {
+        const feedback = await generateFeedback();
+        ws.send(JSON.stringify({ type: "feedback", content: feedback }));
+      } catch (err) {
+        console.error("Feedback generation error:", err);
+      }
+    }
+  }
+
+  async function generateFeedback() {
+    const transcript = conversationHistory
+      .map((m) => `${m.role}: ${m.text}`)
+      .join("\n");
+
+    const prompt = `You are an English language coach reviewing a conversation between an English teacher and a Japanese AWS Support Engineer practicing English.
+
+Here is the conversation transcript:
+---
+${transcript}
+---
+
+Please provide feedback in Japanese with the following sections:
+1. 📝 文法の改善点: List specific grammar mistakes the student made, with corrections and explanations.
+2. 💬 より自然な表現: Suggest more natural or professional English expressions the student could have used.
+3. 🌟 良かった点: Highlight what the student did well.
+4. 📚 次回の学習ポイント: Suggest specific areas to focus on next time.
+
+Keep the feedback concise and actionable.`;
+
+    const command = new InvokeModelCommand({
+      modelId: "amazon.nova-lite-v1:0",
+      contentType: "application/json",
+      accept: "application/json",
+      body: JSON.stringify({
+        messages: [{ role: "user", content: [{ text: prompt }] }],
+        inferenceConfig: { maxTokens: 1024, temperature: 0.7 },
+      }),
+    });
+
+    const response = await client.send(command);
+    const result = JSON.parse(new TextDecoder().decode(response.body));
+    return result.output.message.content[0].text;
   }
 
   ws.on("message", async (raw) => {

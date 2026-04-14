@@ -113,3 +113,31 @@ h1 {
   font-weight: 600;
   margin-right: 0.3rem;
 }
+
+#feedback:empty {
+  display: none;
+}
+
+.feedback-content {
+  background: #1a1a2e;
+  border: 1px solid #4a9eff;
+  border-radius: 12px;
+  padding: 1.2rem;
+  margin-top: 1rem;
+  text-align: left;
+  font-size: 0.85rem;
+  line-height: 1.8;
+}
+
+.feedback-content h2 {
+  font-size: 1rem;
+  margin-bottom: 0.8rem;
+  color: #4a9eff;
+}
+
+.feedback-content pre {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-family: inherit;
+  color: #e0e0e0;
+}
