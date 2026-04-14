@@ -1,5 +1,7 @@
 import express from "express";
 import { createServer } from "http";
+import { createServer as createHttpsServer } from "https";
+import { readFileSync, existsSync } from "fs";
 import { WebSocketServer } from "ws";
 import {
   BedrockRuntimeClient,
@@ -12,7 +14,24 @@ const REGION = process.env.AWS_REGION || "ap-northeast-1";
 const MODEL_ID = "amazon.nova-sonic-v1:0";
 
 const app = express();
-const server = createServer(app);
+
+// Use HTTPS if certs exist, otherwise HTTP
+const certPath = "/etc/ssl/nova-sonic";
+let server;
+if (existsSync(`${certPath}/cert.pem`) && existsSync(`${certPath}/key.pem`)) {
+  server = createHttpsServer(
+    {
+      cert: readFileSync(`${certPath}/cert.pem`),
+      key: readFileSync(`${certPath}/key.pem`),
+    },
+    app
+  );
+  console.log("Using HTTPS");
+} else {
+  server = createServer(app);
+  console.log("Using HTTP (no certs found)");
+}
+
 const wss = new WebSocketServer({ server });
 
 app.get("/health", (_req, res) => res.json({ ok: true }));
