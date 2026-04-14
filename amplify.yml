@@ -1,14 +1,12 @@
-uversion: 1
+version: 1
 frontend:
   phases:
     preBuild:
       commands:
-        - cd nova-sonic-app
-        - npm ci
+        - cd nova-sonic-app && npm ci
     build:
       commands:
-        - cd nova-sonic-app
-        - npm run build
+        - cd nova-sonic-app && npm run build
   artifacts:
     baseDirectory: nova-sonic-app/dist
     files:
