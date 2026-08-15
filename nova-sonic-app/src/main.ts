@@ -34,13 +34,46 @@ function setStatus(text: string) {
   statusEl.textContent = text;
 }
 
+// Track the in-progress bubble so consecutive fragments from the same
+// speaker are merged into one line. Nova Sonic streams both the ASR
+// transcription and the assistant response as several small text events,
+// so without this each fragment would create a new "You:/Assistant:" row.
+let lastMsgEl: HTMLDivElement | null = null;
+let lastMsgRole: string | null = null;
+
+function escapeHtml(s: string): string {
+  const d = document.createElement("div");
+  d.textContent = s;
+  return d.innerHTML;
+}
+
 function addMessage(role: string, text: string) {
-  const div = document.createElement("div");
-  div.className = `msg ${role.toLowerCase()}`;
+  if (!text) return;
   const label = role === "USER" ? "You" : "Assistant";
-  div.innerHTML = `<span class="label">${label}:</span>${text}`;
-  transcriptEl.appendChild(div);
+
+  if (lastMsgRole === role && lastMsgEl) {
+    // Same speaker as the previous fragment -> append to the same bubble.
+    const prev = lastMsgEl.dataset.text ?? "";
+    // Guard against an occasional duplicate event repeating the tail.
+    const merged = prev.endsWith(text) ? prev : prev ? `${prev} ${text}` : text;
+    lastMsgEl.dataset.text = merged;
+    lastMsgEl.innerHTML = `<span class="label">${label}:</span>${escapeHtml(merged)}`;
+  } else {
+    const div = document.createElement("div");
+    div.className = `msg ${role.toLowerCase()}`;
+    div.dataset.text = text;
+    div.innerHTML = `<span class="label">${label}:</span>${escapeHtml(text)}`;
+    transcriptEl.appendChild(div);
+    lastMsgEl = div;
+    lastMsgRole = role;
+  }
   transcriptEl.scrollTop = transcriptEl.scrollHeight;
+}
+
+// Start the next message in a fresh bubble (e.g. after a session ends).
+function resetTranscriptState() {
+  lastMsgEl = null;
+  lastMsgRole = null;
 }
 
 async function toggleSession() {
@@ -153,6 +186,7 @@ async function stopSession() {
 
 function cleanupSession() {
   isSessionActive = false;
+  resetTranscriptState();
   micBtn.classList.remove("active", "connecting");
   setStatus("マイクボタンを押して会話を開始");
   audioPlayer?.stop();
