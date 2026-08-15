@@ -15,6 +15,8 @@
   },
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.1029.0",
+    "@aws-sdk/client-dynamodb": "^3.1029.0",
+    "@aws-sdk/lib-dynamodb": "^3.1029.0",
     "express": "^5.2.1",
     "ws": "^8.20.0"
   }

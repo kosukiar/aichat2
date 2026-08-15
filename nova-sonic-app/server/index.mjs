@@ -8,12 +8,45 @@ import {
   InvokeModelWithBidirectionalStreamCommand,
 } from "@aws-sdk/client-bedrock-runtime";
 import { randomUUID } from "crypto";
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import {
+  DynamoDBDocumentClient,
+  QueryCommand,
+  GetCommand,
+  PutCommand,
+  UpdateCommand,
+  DeleteCommand,
+} from "@aws-sdk/lib-dynamodb";
 
 const PORT = process.env.PORT || 3001;
 const REGION = process.env.AWS_REGION || "ap-northeast-1";
 const MODEL_ID = "amazon.nova-sonic-v1:0";
+const DDB_TABLE = process.env.DDB_TABLE || "nova-sonic-sessions";
+
+const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({ region: REGION }));
 
 const app = express();
+app.use(express.json({ limit: "2mb" }));
+
+// CORS: allow the Amplify-hosted frontends (any *.amplifyapp.com) and local dev
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  let allow = false;
+  if (origin) {
+    try {
+      const host = new URL(origin).hostname;
+      allow = /\.amplifyapp\.com$/i.test(host) || origin === "http://localhost:5173";
+    } catch {}
+  }
+  if (allow) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+  }
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,PATCH,DELETE,OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  if (req.method === "OPTIONS") return res.sendStatus(204);
+  next();
+});
 
 // Use HTTPS if certs exist, otherwise HTTP
 const certPath = "/etc/ssl/nova-sonic";
@@ -35,6 +68,138 @@ if (existsSync(`${certPath}/cert.pem`) && existsSync(`${certPath}/key.pem`)) {
 const wss = new WebSocketServer({ server });
 
 app.get("/health", (_req, res) => res.json({ ok: true }));
+
+// ---- Chat session persistence (DynamoDB) ----
+// Table: PK userId (S), SK sessionId (S). Responses expose sessionId as `id`.
+function toSummary(item) {
+  return {
+    id: item.sessionId,
+    title: item.title,
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
+  };
+}
+
+// List a user's sessions (no message bodies)
+app.get("/api/sessions", async (req, res) => {
+  const userId = req.query.userId;
+  if (!userId) return res.status(400).json({ error: "userId required" });
+  try {
+    const out = await ddb.send(
+      new QueryCommand({
+        TableName: DDB_TABLE,
+        KeyConditionExpression: "userId = :u",
+        ExpressionAttributeValues: { ":u": String(userId) },
+      })
+    );
+    const sessions = (out.Items || [])
+      .map(toSummary)
+      .sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
+    res.json({ sessions });
+  } catch (err) {
+    console.error("list sessions error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Create a session
+app.post("/api/sessions", async (req, res) => {
+  const { userId, title } = req.body || {};
+  if (!userId) return res.status(400).json({ error: "userId required" });
+  const now = new Date().toISOString();
+  const item = {
+    userId: String(userId),
+    sessionId: randomUUID(),
+    title: title || "New chat",
+    messages: [],
+    createdAt: now,
+    updatedAt: now,
+  };
+  try {
+    await ddb.send(new PutCommand({ TableName: DDB_TABLE, Item: item }));
+    res.json({ ...toSummary(item), messages: [] });
+  } catch (err) {
+    console.error("create session error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get a session with its messages
+app.get("/api/sessions/:sessionId", async (req, res) => {
+  const userId = req.query.userId;
+  if (!userId) return res.status(400).json({ error: "userId required" });
+  try {
+    const out = await ddb.send(
+      new GetCommand({
+        TableName: DDB_TABLE,
+        Key: { userId: String(userId), sessionId: req.params.sessionId },
+      })
+    );
+    if (!out.Item) return res.status(404).json({ error: "not found" });
+    res.json({ ...toSummary(out.Item), messages: out.Item.messages || [] });
+  } catch (err) {
+    console.error("get session error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Append messages and/or rename
+app.patch("/api/sessions/:sessionId", async (req, res) => {
+  const { userId, appendMessages, title } = req.body || {};
+  if (!userId) return res.status(400).json({ error: "userId required" });
+  const now = new Date().toISOString();
+  const sets = ["updatedAt = :now"];
+  const names = {};
+  const values = { ":now": now };
+  if (Array.isArray(appendMessages) && appendMessages.length) {
+    sets.push("messages = list_append(if_not_exists(messages, :empty), :m)");
+    values[":empty"] = [];
+    values[":m"] = appendMessages;
+  }
+  if (typeof title === "string" && title.length) {
+    sets.push("#t = :title");
+    names["#t"] = "title";
+    values[":title"] = title;
+  }
+  try {
+    const out = await ddb.send(
+      new UpdateCommand({
+        TableName: DDB_TABLE,
+        Key: { userId: String(userId), sessionId: req.params.sessionId },
+        UpdateExpression: "SET " + sets.join(", "),
+        ...(Object.keys(names).length ? { ExpressionAttributeNames: names } : {}),
+        ExpressionAttributeValues: values,
+        ConditionExpression: "attribute_exists(sessionId)",
+        ReturnValues: "ALL_NEW",
+      })
+    );
+    const item = out.Attributes || {};
+    res.json({ ...toSummary(item), messages: item.messages || [] });
+  } catch (err) {
+    if (err.name === "ConditionalCheckFailedException")
+      return res.status(404).json({ error: "not found" });
+    console.error("patch session error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Delete a session
+app.delete("/api/sessions/:sessionId", async (req, res) => {
+  const userId = req.query.userId;
+  if (!userId) return res.status(400).json({ error: "userId required" });
+  try {
+    await ddb.send(
+      new DeleteCommand({
+        TableName: DDB_TABLE,
+        Key: { userId: String(userId), sessionId: req.params.sessionId },
+      })
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("delete session error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 wss.on("connection", (ws) => {
   console.log("Client connected");
