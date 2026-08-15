@@ -1,0 +1,10 @@
+**/node_modules
+**/dist
+.git
+.vscode
+*.log
+nova-sonic-app/src
+nova-sonic-app/public
+nova-sonic-app/index.html
+nova-sonic-app/vite.config.ts
+nova-sonic-app/tsconfig.json
