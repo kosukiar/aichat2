@@ -26,12 +26,10 @@ if (!WS_URL) {
 // Layout
 // ---------------------------------------------------------------------------
 app.innerHTML = `
-  <div class="bg-ghost" aria-hidden="true">${ghostSvg()}</div>
-
   <div class="layout">
     <aside class="sidebar glass" id="sidebar" aria-label="サイドバー">
       <div class="sidebar-head">
-        <span class="brand">Nova&nbsp;Sonic</span>
+        <span class="brand"><span class="brand-logo">${ghostSvg()}</span>Nova&nbsp;Sonic</span>
         <button class="icon-btn close-drawer" id="closeDrawerBtn" aria-label="メニューを閉じる">✕</button>
       </div>
       <button class="new-chat" id="newChatBtn">＋ New chat</button>
@@ -46,11 +44,12 @@ app.innerHTML = `
     <main class="main">
       <header class="topbar">
         <button class="icon-btn hamburger" id="hamburgerBtn" aria-label="メニューを開く">☰</button>
-        <h1>🎙️ Nova Sonic Voice Chat</h1>
+        <span class="brand-logo topbar-logo">${ghostSvg()}</span>
+        <h1>Voice Chat</h1>
       </header>
 
       <section class="stage">
-        <button class="mic-button" id="micBtn" aria-label="マイクのオン・オフ切り替え">🎤</button>
+        <button class="mic-button" id="micBtn" aria-label="マイクのオン・オフ切り替え"><svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="21"/><line x1="8" y1="21" x2="16" y2="21"/></svg></button>
         <div id="status">マイクボタンを押して会話を開始</div>
       </section>
 

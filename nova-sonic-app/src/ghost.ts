@@ -1,36 +1,25 @@
-// Kiro-style ghost mascot as an inline SVG. Rendered into the background,
-// low opacity, pointer-events:none — purely decorative (aria-hidden by caller).
+// White "Kiro-style" ghost mark, used as the brand LOGO in the header
+// (not a background decoration). Recreated as a plain SVG to match the look
+// of kiro.dev's ghost — a rounded white body with a scalloped bottom and two
+// tall black eyes. `currentColor` drives the body so it can be themed.
 export function ghostSvg(): string {
   return `
-  <svg viewBox="0 0 220 260" fill="none" xmlns="http://www.w3.org/2000/svg" class="ghost-svg" focusable="false">
-    <defs>
-      <radialGradient id="ghostBody" cx="50%" cy="38%" r="70%">
-        <stop offset="0%" stop-color="#c4a8ff" />
-        <stop offset="55%" stop-color="#8b5cf6" />
-        <stop offset="100%" stop-color="#5b21b6" />
-      </radialGradient>
-      <filter id="ghostGlow" x="-40%" y="-40%" width="180%" height="180%">
-        <feGaussianBlur stdDeviation="10" result="b" />
-        <feMerge>
-          <feMergeNode in="b" />
-          <feMergeNode in="SourceGraphic" />
-        </feMerge>
-      </filter>
-    </defs>
-    <g filter="url(#ghostGlow)">
-      <path
-        d="M40 130 A70 70 0 0 1 180 130
-           L180 215
-           C173 202 160 202 152 215
-           C144 228 128 228 120 215
-           C112 202 96 202 88 215
-           C80 228 64 228 56 215
-           C48 202 40 205 40 205 Z"
-        fill="url(#ghostBody)" />
-      <ellipse cx="88" cy="120" rx="12" ry="16" fill="#1a0b2e" />
-      <ellipse cx="132" cy="120" rx="12" ry="16" fill="#1a0b2e" />
-      <circle cx="92" cy="114" r="4" fill="#fff" opacity="0.9" />
-      <circle cx="136" cy="114" r="4" fill="#fff" opacity="0.9" />
-    </g>
+  <svg viewBox="0 0 100 108" fill="none" xmlns="http://www.w3.org/2000/svg" class="ghost-svg" focusable="false" aria-hidden="true">
+    <path
+      d="M50 4
+         C27 4 15 22 15 45
+         L15 93
+         C15 98 20 100 24 97
+         C28 94 32 94 36 97
+         C40 100 44 100 48 97
+         C51 94.5 55 94.5 58 97
+         C62 100 66 100 70 97
+         C74 94 78 94 82 97
+         C85.5 99.6 85 94 85 92
+         L85 45
+         C85 22 73 4 50 4 Z"
+      fill="currentColor" />
+    <ellipse cx="39" cy="45" rx="6.5" ry="10.5" fill="#0b0b0f" />
+    <ellipse cx="61" cy="45" rx="6.5" ry="10.5" fill="#0b0b0f" />
   </svg>`;
 }
