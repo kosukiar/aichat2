@@ -20,7 +20,7 @@ import {
 
 const PORT = process.env.PORT || 3001;
 const REGION = process.env.AWS_REGION || "ap-northeast-1";
-const MODEL_ID = "amazon.nova-sonic-v1:0";
+const MODEL_ID = "amazon.nova-2-sonic-v1:0";
 const DDB_TABLE = process.env.DDB_TABLE || "nova-sonic-sessions";
 
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({ region: REGION }));
